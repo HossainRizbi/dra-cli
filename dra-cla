@@ -370,12 +370,20 @@ play_episode () {
 	set -- "$player_fn" "$video_url"
 	case "$player_fn" in
 		vlc)
-			[ ! "$auto_play" -eq 0 ] && set -- "$@" "--play-and-exit"
+			if uname -a | grep -qE '[Aa]ndroid';then
+				am start --user 0 -a android.intent.action.VIEW -d "$video_url" -n org.videolan.vlc/org.videolan.vlc.gui.video.VideoPlayerActivity -e "title" "${drama_id}${episode}" > /dev/null 2>&1 &
+			else
+      [ ! "$auto_play" -eq 0 ] && set -- "$@" "--play-and-exit"
 			set -- "$@" --http-referrer="$dpage_link"
-			;;
+      fi
+      ;;
 		*)
-			set -- "$@" --referrer="$dpage_link" --force-media-title="${drama_id}${episode}"
-			;;
+			if uname -a | grep -qE '[Aa]ndroid';then
+			am start --user 0 -a android.intent.action.VIEW -d "$video_url" -n is.xyz.mpv/.MPVActivity > /dev/null 2>&1 &
+			else
+      set -- "$@" --referrer="$dpage_link" --force-media-title="${drama_id}${episode}"
+      fi
+      ;;
 	esac
 	# Run Command
 	if [ "$auto_play" -eq 0 ]; then
@@ -454,10 +462,10 @@ done
 shift $((OPTIND - 1))
 
 dep_ch "curl" "sed" "grep" "openssl"
-if [ "$is_download" -eq 0 ]; then
-	dep_ch "$player_fn"
-else
+if [ "$is_download" -eq 1 ]; then
 	dep_ch "aria2c" "ffmpeg"
+elif ! (uname -a | grep -qE '[Aa]ndroid');then
+  dep_ch "$player_fn"
 fi
 
 base_url="https://asianplay.net"
